@@ -1,0 +1,36 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+*.dll
+*.exe
+*.app
+*.log
+
+# Visual Studio files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# .NET
+bin/
+obj/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# User-specific files
+*.user
+*.sln.docstates
+
+# Logs
+*.log
+logs/
