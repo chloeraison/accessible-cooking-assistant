@@ -19,6 +19,9 @@ import psycopg2 # connection for Python to PostgreSQL
 import pandas as pd # Loads and reads the raw recipe CSV
 import ast # Turns string version of python list (['point 1', 'point 2'] into an actual list
 import os # Relative path creation so the code is usable on different device
+from dotenv import load_dotenv # Simple security design
+
+load_dotenv()  # Loads from .env
 
 # Load csv file via csv_path
 csv_path = os.path.join("C:/Users/cadmi/data/recipeData/RAW_recipes.csv")
@@ -35,11 +38,11 @@ except Exception as e:
 # Connect to postgreSQL
 try:
     conn = psycopg2.connect(
-        dbname="accessible_recipes",
-        user="postgres",
-        password="postgres",
-        host="localhost",
-        port="5432"
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT")
     )
     cursor = conn.cursor()
     print("Connected to PostgreSQL")
