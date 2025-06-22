@@ -34,3 +34,6 @@ artifacts/
 # Logs
 *.log
 logs/
+
+#environs
+.env
