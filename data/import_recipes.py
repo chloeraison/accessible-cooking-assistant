@@ -54,8 +54,11 @@ except Exception as e:
 success_count = 0
 fail_count = 0 
 
+#Testing the loop so as not to break the repo
+TEST_MODE = True  # Set to False to import full dataset
+rows = df.head(5) if TEST_MODE else df
 # Loop through the recipe rows
-for _, row in df.iterrows():
+for _, row in rows.iterrows(): # Limiting the number of recipes for now 
     name = row["name"].strip().lower()  # Standardise recipe name
     
     try:
