@@ -21,7 +21,8 @@ import ast # Turns string version of python list (['point 1', 'point 2'] into an
 import os # Relative path creation
 from dotenv import load_dotenv # Security design
 
-load_dotenv()  # Loads from .env
+load_dotenv() # load_dotenv()  # Loads from .env
+print("Loaded password:", os.getenv("DB_PASSWORD"))
 
 # Load csv file via csv_path
 csv_path = "C:/Users/cadmi/data/recipeData/RAW_recipes.csv"
