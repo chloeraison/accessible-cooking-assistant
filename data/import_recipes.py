@@ -18,13 +18,13 @@
 import psycopg2 # connection for Python to PostgreSQL
 import pandas as pd # Loads and reads the raw recipe CSV
 import ast # Turns string version of python list (['point 1', 'point 2'] into an actual list
-import os # Relative path creation so the code is usable on different device
-from dotenv import load_dotenv # Simple security design
+import os # Relative path creation
+from dotenv import load_dotenv # Security design
 
 load_dotenv()  # Loads from .env
 
 # Load csv file via csv_path
-csv_path = os.path.join("C:/Users/cadmi/data/recipeData/RAW_recipes.csv")
+csv_path = "C:/Users/cadmi/data/recipeData/RAW_recipes.csv"
 df = pd.read_csv(csv_path)
 
 # Test to see if the files are loaded:
@@ -51,13 +51,35 @@ except Exception as e:
     exit()
 
 # Set counters to keep track of import success
+success_count = 0
+fail_count = 0 
 
 # Loop through the recipe rows
+for _, row in df.iterrows():
+    name = row["name"].strip().lower()  # Standardise recipe name
+    
+    try:
+        # Parse steps and insert to avoid database break
+        steps = ast.literal_eval(row["steps"])  # Convert string to list
 
-# Parse steps and insert to avoid database break
+        for i, step in enumerate(steps):
+            cursor.execute(
+                "INSERT INTO recipes (name, step_number, instruction) VALUES (%s, %s, %s);",
+                (name, i + 1, step.strip())
+            )
 
-# Insert steps into the tables so no one's putting their flour in the oven without the other elements of the cookie batter
-
-# Handle errors and log them
+    # Handle errors and log them
+    except (ValueError, SyntaxError) as e:
+        print(f"Skipping recipe '{name}' due to parsing error: {e}")
+    except Exception as db_error:
+        print(f"DB error on recipe '{name}': {db_error}")
 
 # Commit, close and final output 'import complete' end of process
+try:
+    conn.commit()
+    print("Import complete.")
+except Exception as e:
+    print(f"Commit failed: {e}")
+finally:
+    cursor.close()
+    conn.close()
