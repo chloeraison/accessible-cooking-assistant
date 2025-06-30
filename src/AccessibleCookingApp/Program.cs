@@ -1,17 +1,13 @@
 ﻿using System;
 
-// This is the entry point of the whole application.
-// Like the first step in a recipe, Main() is where things begin!
 class Program
 {
     static void Main(string[] args)
     {
-        // Create a new instance of our custom RecipeManager class.
-        // Think of this as opening our virtual cookbook.
+        // Create a new instance of custom RecipeManager class
         var recipeManager = new RecipeManager();
 
-        // Ask the user for the name of the recipe they want.
-        // For now, they have to type it exaactly as it exists in the database.
+        // Ask user for the name of the recipe they want
         Console.Write("Enter a recipe name: ");
         string name = Console.ReadLine();
 
@@ -21,14 +17,12 @@ class Program
         // - Loads the steps into memory for step-by-step access
         recipeManager.LoadRecipe(name);
 
-        // We print the very first instruction, so the user knows what to do.
         Console.WriteLine("First step:");
         Console.WriteLine(recipeManager.GetCurrentStep());
 
         string input;
 
-        // This loop allows the user to navigate through the recipe instructions.
-        // Like flipping through the pages of a coookbook.
+        // This loop allows the user to navigate through the recipe instructions
         do
         {
             Console.Write("\nCommand (next, prev, print, exit): ");
@@ -52,12 +46,11 @@ class Program
                     break;
 
                 case "exit":
-                    // Graceful goodbye message
                     Console.WriteLine("Exiting.");
                     break;
 
                 default:
-                    // If the command is not recognised, let the user know.
+                    // If the command is not recognised, let user know
                     Console.WriteLine("Unknown command.");
                     break;
             }
