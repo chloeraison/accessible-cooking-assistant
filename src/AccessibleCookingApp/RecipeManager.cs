@@ -7,7 +7,7 @@ using Npgsql;
 public class RecipeManager
 {
     private List<string> steps = new List<string>(); // Holds all the steps for a recipe
-    private string recipeName;                       // Name of the currently loaded recipe
+    private string recipeName = "";                   // Name of the currently loaded recipe
     private int currentStepIndex = 0;                // Tracks which step the user is currently on
 
     // Connects to PostgreSQL and loads a recipe by name.

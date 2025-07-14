@@ -51,9 +51,9 @@ using System;
 
 class SingleTimer
 {
-    public DateTime EndTime { get; private set; }
+    public DateTime EndTime { get; private set; } // Stores the exact point in time when the timer is due to end.
 
-    public void Start(double minutes) // 👈 Change here
+    public void Start(double minutes) //Starts or restarts the timer for the specified number of minutes.
     {
         EndTime = DateTime.Now.AddMinutes(minutes);
     }

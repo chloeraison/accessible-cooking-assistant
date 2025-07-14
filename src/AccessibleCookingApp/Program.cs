@@ -10,7 +10,12 @@ class Program
 
         // Ask the user what recipe they want to load
         Console.Write("Enter a recipe name: ");
-        string name = Console.ReadLine();
+        string? name = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                Console.WriteLine("No recipe name provided.");
+                return;
+            }
 
         // Load recipe steps from database
         recipeManager.LoadRecipe(name);
@@ -25,7 +30,7 @@ class Program
         do
         {
             Console.Write("\nCommand (next, prev, print, exit): ");
-            input = Console.ReadLine()?.ToLower();
+            input = Console.ReadLine()?.ToLower() ?? "";
 
             switch (input)
             {
