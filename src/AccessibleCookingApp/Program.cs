@@ -1,6 +1,6 @@
 ﻿using System;
 
-class Program
+/* class Program
 {
     static void Main(string[] args)
     {
@@ -58,3 +58,4 @@ class Program
         } while (input != "exit"); // Keeps looping until the user types "exit"
     }
 }
+ */

@@ -48,11 +48,12 @@ Once it finishes, app runs CleanupFinishedTimers();
 
 // Single timer to get timer logic working
 using System;
+
 class SingleTimer
 {
     public DateTime EndTime { get; private set; }
 
-    public void Start(int minutes)
+    public void Start(double minutes) // 👈 Change here
     {
         EndTime = DateTime.Now.AddMinutes(minutes);
     }
