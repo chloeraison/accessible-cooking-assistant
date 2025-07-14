@@ -1,28 +1,27 @@
 ﻿using System;
 
-/* class Program
+// Entry point for the app
+class Program
 {
     static void Main(string[] args)
     {
-        // Create a new instance of custom RecipeManager class
+        // Initialise the class that handles recipe data
         var recipeManager = new RecipeManager();
 
-        // Ask user for the name of the recipe they want
+        // Ask the user what recipe they want to load
         Console.Write("Enter a recipe name: ");
         string name = Console.ReadLine();
 
-        // Call the LoadRecipe method, which:
-        // - Connects to PostgreSQL
-        // - Finds all steps of the given recipe name
-        // - Loads the steps into memory for step-by-step access
+        // Load recipe steps from database
         recipeManager.LoadRecipe(name);
 
+        // Display the first instruction
         Console.WriteLine("First step:");
         Console.WriteLine(recipeManager.GetCurrentStep());
 
         string input;
 
-        // This loop allows the user to navigate through the recipe instructions
+        // Start interaction loop: allows the user to navigate through the recipe
         do
         {
             Console.Write("\nCommand (next, prev, print, exit): ");
@@ -31,31 +30,31 @@
             switch (input)
             {
                 case "next":
-                    // Moves forward one step
+                    // Move to next instruction
                     Console.WriteLine(recipeManager.NextStep());
                     break;
 
                 case "prev":
-                    // Moves back one step
+                    // Go back to previous instruction
                     Console.WriteLine(recipeManager.PreviousStep());
                     break;
 
                 case "print":
-                    // Prints the entire recipe, step by step
+                    // Show all recipe steps
                     recipeManager.PrintAllSteps();
                     break;
 
                 case "exit":
+                    // Leave the application
                     Console.WriteLine("Exiting.");
                     break;
 
                 default:
-                    // If the command is not recognised, let user know
+                    // Failsafe for unknown input
                     Console.WriteLine("Unknown command.");
                     break;
             }
 
-        } while (input != "exit"); // Keeps looping until the user types "exit"
+        } while (input != "exit"); // Loop until explicitly told to stop
     }
 }
- */

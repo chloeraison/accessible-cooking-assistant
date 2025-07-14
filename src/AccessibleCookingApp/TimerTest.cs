@@ -2,8 +2,8 @@ using System;
 using System.Threading;
 
 //A basic test harness to demonstrate and verify functionality of the SingleTimer class.
-// This simulates a 10-second countdown timer, printing time remaining every second.
-class TimerTest
+// This simulates a 10-second countdown timer, printing time remaining every second./* 
+/* class TimerTest
 {
     static void Main(string[] args)
     {
@@ -23,3 +23,4 @@ class TimerTest
         Console.WriteLine("Timer finished!");
     }
 }
+ */
