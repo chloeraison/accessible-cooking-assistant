@@ -1,7 +1,7 @@
 ﻿using System;
 
 // Entry point for the app
-class Program
+/* class Program
 {
     static void Main(string[] args)
     {
@@ -63,3 +63,4 @@ class Program
         } while (input != "exit"); // Loop until explicitly told to stop
     }
 }
+ */
