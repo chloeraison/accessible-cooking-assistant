@@ -1,4 +1,4 @@
-# Build results
+# === .NET / Visual Studio ===
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -8,32 +8,39 @@ x86/
 *.exe
 *.app
 *.log
-
-# Visual Studio files
 .vs/
 .vscode/
 *.user
 *.suo
-
-# .NET
 bin/
 obj/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-
-# NuGet
 *.nupkg
 *.snupkg
 .nuget/
-
-# User-specific files
-*.user
 *.sln.docstates
-
-# Logs
-*.log
 logs/
 
-#environs
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+.venv/
+pip-log.txt
+
+# === Environment / Secrets ===
 .env
+.env.*         # e.g. .env.local, .env.production
+
+# === Mac / OS X ===
+.DS_Store
+
+# === Miscellaneous ===
+*.log
