@@ -10,14 +10,33 @@ public class RecipeManager
     private string recipeName = "";                   // Name of the currently loaded recipe
     private int currentStepIndex = 0;                // Tracks which step the user is currently on
 
+    // Testing Recipe Data
+    private bool UseTestData() =>
+        string.Equals(Environment.GetEnvironmentVariable("USE_TEST_DATA"), "true",
+                    StringComparison.OrdinalIgnoreCase);
+
     // Connects to PostgreSQL and loads a recipe by name.
     public void LoadRecipe(string name)
     {
+
+        if (UseTestData())
+        {
+            recipeName = name.ToLower();
+            currentStepIndex = 0;
+            steps.Clear();
+
+            if (TestRecipeData.Recipes.TryGetValue(recipeName, out var list) && list.Count > 0)
+                steps.AddRange(list);
+            else
+                steps.Add("No recipe steps found for that name.");
+            return; // skip DB entirely
+        }
+
         recipeName = name.ToLower();
         currentStepIndex = 0;
         steps.Clear(); // Reset the list to avoid mixing with previous recipes
 
-        string connString = "Host=localhost;Username=postgres;Password=password;Database=accessible_recipes"; 
+        string connString = "Host=localhost;Username=postgres;Password=password;Database=accessible_recipes";
         // In production: this should use environment variables for safety
 
         try
@@ -49,11 +68,19 @@ public class RecipeManager
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) // show any DB connection/query errors
         {
-            // On error, show message but don't crash app
-            steps.Clear();
-            steps.Add($"Error loading recipe: {ex.Message}");
+            if (TestRecipeData.Recipes.TryGetValue(recipeName, out var list) && list.Count > 0)
+            {
+                steps.Clear();
+                steps.AddRange(list);
+                steps.Insert(0, "[DB unavailable: using test data]");
+            }
+            else
+            {
+                steps.Clear();
+                steps.Add($"Error loading recipe: {ex.Message}");
+            }
         }
     }
 

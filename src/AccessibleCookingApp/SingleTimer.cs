@@ -49,22 +49,23 @@ Once it finishes, app runs CleanupFinishedTimers();
 // Single timer to get timer logic working
 using System;
 
-class SingleTimer
+public class SingleTimer
 {
-    public DateTime EndTime { get; private set; } // Stores the exact point in time when the timer is due to end.
+    private DateTime? _end;
 
-    public void Start(double minutes) //Starts or restarts the timer for the specified number of minutes.
+    public void Start(double minutes)
     {
-        EndTime = DateTime.Now.AddMinutes(minutes);
+        if (minutes <= 0) throw new ArgumentOutOfRangeException(nameof(minutes));
+        _end = DateTime.UtcNow.AddMinutes(minutes);
     }
+
+    public bool IsRunning => _end.HasValue && DateTime.UtcNow < _end.Value;
+    public bool IsFinished() => _end.HasValue && DateTime.UtcNow >= _end.Value;
 
     public TimeSpan TimeRemaining()
     {
-        return EndTime - DateTime.Now;
-    }
-
-    public bool IsFinished()
-    {
-        return DateTime.Now >= EndTime;
+        if (!_end.HasValue) return TimeSpan.Zero;
+        var rem = _end.Value - DateTime.UtcNow;
+        return rem < TimeSpan.Zero ? TimeSpan.Zero : rem;
     }
 }
