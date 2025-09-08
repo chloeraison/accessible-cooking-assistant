@@ -46,7 +46,7 @@ public static class UnitConverter
     // Normalising unit names so "teaspoons" == "tsp", etc.
     private static readonly Dictionary<string, string> Alias = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["ml"] = "ml", ["millilitre"] = "ml", ["millilitres"] = "ml",
+        ["ml"] = "ml", ["millilitre"] = "ml", ["millilitres"] = "ml", ["mills"] = "ml", ["mill"] = "ml",
         ["cup"] = "cup", ["cups"] = "cup",
         ["tbsp"] = "tbsp", ["tablespoon"] = "tbsp", ["tablespoons"] = "tbsp",
         ["tsp"] = "tsp", ["teaspoon"] = "tsp", ["teaspoons"] = "tsp",
