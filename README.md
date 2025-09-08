@@ -64,3 +64,5 @@ Voice & exit
 - voice on | voice off  : toggle listening mode
 - help : show this list
 - end | exit : quit
+
+## Happy Cooking'!'
