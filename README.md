@@ -65,4 +65,4 @@ Voice & exit
 - help : show this list
 - end | exit : quit
 
-## Happy Cooking'!'
+## Happy Cooking!
