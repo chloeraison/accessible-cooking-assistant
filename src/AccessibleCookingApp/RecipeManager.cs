@@ -68,7 +68,7 @@ public class RecipeManager
                 }
             }
         }
-        catch (Exception ex) // show any DB connection/query errors
+        catch (Exception)
         {
             if (TestRecipeData.Recipes.TryGetValue(recipeName, out var list) && list.Count > 0)
             {
@@ -79,7 +79,8 @@ public class RecipeManager
             else
             {
                 steps.Clear();
-                steps.Add($"Error loading recipe: {ex.Message}");
+                // Replace raw DB error with a friendly message
+                steps.Add("Error: Recipe not found. Please try again.");
             }
         }
     }

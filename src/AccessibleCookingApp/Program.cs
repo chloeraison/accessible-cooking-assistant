@@ -33,6 +33,7 @@ class Program
         // load profile early
         var profile = ProfileStore.Load("default");
         bool voicePreferred = profile.VoicePreferred;
+        bool speechOut = true; // controls text-to-speech (on by default)
         double scaleFactor = profile.ScaleFactor;        // This affects how prints are *announced*
         string preferredUnits = profile.PreferredUnits;  // "metric"|"imperial"
         string currentRecipe = "";
@@ -44,6 +45,7 @@ class Program
 
         // bool voicePreferred = true; // toggle with "voice on/off"
 
+
         // ~*~ Step 1: pick a recipe ~*~
         var pick = await PromptForRecipeAsync(recipeManager, voice, voicePreferred);
         currentRecipe = pick.recipe;
@@ -51,53 +53,56 @@ class Program
         profile.VoicePreferred = voicePreferred; // keep profile in sync
         ProfileStore.Save(profile);
 
-        // ~*~ Step 2: main loop for commands ~*~
+        // ~~ Step 2: main loop for commands ~~
         while (true)
         {
-            // check timers on every loop
+            // 1) Check timers on every loop
             var finished = timers.CleanupFinishedTimers();
-            foreach (var f in finished) Console.WriteLine($"[{f}] finished!");
+            foreach (var f in finished)
+            {
+                var msg = $"[{f}] finished!";
+                await SayAsync(msg, voice, speechOut);
+                try { Console.Beep(); } catch { }
+            }
 
+            // 2) Prompt and read input (voice first, keyboard fallback)
             string raw = await GetInputAsync(
-                voice, voicePreferred,
-                $"\n[{currentRecipe}] Command (load/search/next/previous/repeat/print/timer/status/stop/stop all/convert/scale/units/profile/mock iot/voice on/off/help/end): "
+                voice,
+                voicePreferred,
+                $"\n[{currentRecipe}] Command (load/search/next/previous/repeat/print/timer/status/stop/stop all/convert/scale/units/profile/mock iot/speech on/off/voice on/off/help/end): "
             );
 
+            // 3) Normalise + log
             string input = Clean(raw);
             LogUsage(currentRecipe, raw, input);
 
+            // 4) Handle command
             switch (input)
             {
-                // ~*~ recipe navigation ~*~
+                // --- recipe navigation (spoken) ---
                 case "next":
-                    Console.WriteLine(recipeManager.NextStep());
+                    await SayAsync(recipeManager.NextStep(), voice, speechOut);
                     break;
 
                 case "previous":
-                case "prev": // shortcut
-                    Console.WriteLine(recipeManager.PreviousStep());
+                case "prev":
+                case "back":
+                    await SayAsync(recipeManager.PreviousStep(), voice, speechOut);
                     break;
 
                 case "repeat":
-                    Console.WriteLine(recipeManager.GetCurrentStep());
+                case "again":
+                    await SayAsync(recipeManager.GetCurrentStep(), voice, speechOut);
                     break;
 
                 case "print":
-                    if (Math.Abs(scaleFactor - 1.0) > 0.0001) Console.WriteLine($"(Scaled to {scaleFactor:0.##}x)");
+                    if (Math.Abs(scaleFactor - 1.0) > 0.0001)
+                        Console.WriteLine($"(Scaled to {scaleFactor:0.##}×)");
                     recipeManager.PrintAllSteps();
                     break;
 
                 case "list recipes":
                     ListRecipesIfAvailable();
-                    break;
-
-                // ===== synonyms (because I kept saying some words instead of others on testing) =====
-                case "again": // "repeat" alias
-                    Console.WriteLine(recipeManager.GetCurrentStep());
-                    break;
-
-                case "back":  // "previous" alias
-                    Console.WriteLine(recipeManager.PreviousStep());
                     break;
 
                 // ===== search recipes (test data) =====
@@ -117,7 +122,7 @@ class Program
                         {
                             scaleFactor = factor;
                             profile.ScaleFactor = scaleFactor; ProfileStore.Save(profile);
-                            Console.WriteLine($"Scaled to {scaleFactor:0.##}× (applies when printing/reading ingredients).");
+                            Console.WriteLine($"Scaled to {scaleFactor:0.##}x (applies when printing/reading ingredients).");
                         }
                         else Console.WriteLine("Try: scale 2x   |   scale 0.5x");
                         break;
@@ -301,6 +306,16 @@ class Program
                     else { voicePreferred = true; Console.WriteLine("Voice enabled (listening first)."); }
                     break;
 
+                case "speech on":
+                    speechOut = true;
+                    Console.WriteLine("Speech output enabled.");
+                    break;
+
+                case "speech off":
+                    speechOut = false;
+                    Console.WriteLine("Speech output disabled.");
+                    break;
+
                 // ~*~ misc ~*~
                 case "help":
                     Console.WriteLine("=== Accessible Cooking Assistant — Help ===");
@@ -327,7 +342,7 @@ class Program
                     Console.WriteLine();
                     Console.WriteLine("Conversions (units)");
                     Console.WriteLine("- convert <value> <from> to <to>  : e.g., 'convert 240 ml to cups', 'convert 4 oz to g'");
-                    Console.WriteLine("  Supported: ml, cup(s), tbsp, tsp, g, oz (no cups↔grams without an ingredient).");
+                    Console.WriteLine("  Supported: ml, cup(s), tbsp, tsp, g, oz (no cups<->grams without an ingredient).");
                     Console.WriteLine();
                     Console.WriteLine("Portion scaling & preferences");
                     Console.WriteLine("- scale <factor>x      : set portion multiplier (e.g., 'scale 2x', 'scale 0.5x')");
@@ -371,6 +386,7 @@ class Program
 
         if (voicePreferred && voice != null)
         {
+            await Task.Delay(10); // debounce before mic opens (avoids capturing our own TTS)
             for (int i = 0; i < voiceRetries; i++)
             {
                 string? heard = await voice.ListenOnceAsync();
@@ -573,6 +589,17 @@ class Program
             }
 
             Console.WriteLine("Couldn’t find that recipe. Try again or say 'list recipes'.");
+        }
+    }
+
+    // Speak text out loud if speechOut is enabled, otherwise just print
+    static async Task SayAsync(string text, VoiceInterface? voice, bool speechOut)
+    {
+        Console.WriteLine(text);
+        if (speechOut && voice != null)
+        {
+            await voice.SpeakAsync(text);
+            await Task.Delay(10);   // small settle to avoid chopped endings
         }
     }
 

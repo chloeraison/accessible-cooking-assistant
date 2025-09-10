@@ -2,11 +2,28 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.CognitiveServices.Speech;
+using Microsoft.CognitiveServices.Speech.Audio; // for AudioConfig
 using DotNetEnv;
+using System.Media; // for SoundPlayer
 
 /*
- VoiceInterface class handles microphone input and converts spoken 
- words to text using Microsoft Azure Cognitive Services.
+ VoiceInterface class
+ --------------------
+ Handles microphone input (speech → text) and also speaks results back (text → speech)
+ using Microsoft Azure Cognitive Services.
+
+ **Outcome**
+ -> Listen for voice commands and return them as text
+ -> Speak app responses out loud for accessibility
+ -> Load credentials safely from a .env file (no hard-coding)
+
+ **Plan (top → bottom)**
+ 1. Load Azure Speech credentials (key + region) from .env
+ 2. Create a SpeechConfig for both recognition + synthesis
+ 3. Provide:
+    - ListenOnceAsync() : waits for one spoken command and returns the recognised text
+    - SpeakAsync(text)  : speaks a line of text back to the user
+ 4. Expose IsSpeaking so callers can wait until TTS is finished (half-duplex UX)
  */
 public class VoiceInterface
 {
@@ -14,74 +31,136 @@ public class VoiceInterface
     private readonly string subscriptionKey;
     private readonly string serviceRegion;
 
-    // Main configuration object for the Azure speech recogniser
+    // Main configuration object for Azure Speech (used for both STT + TTS)
     private readonly SpeechConfig speechConfig;
 
+    // Shared synthesiser for text-to-speech output
+    private readonly SpeechSynthesizer synthesizer;
+
+    // Indicates when TTS is playing so callers can wait before listening again
+    public bool IsSpeaking { get; private set; } = false;
+
     /*
-    Constructor: Sets up the speech configuration
-    by loading environment variables from a .env file
-    using DotNetEnv. If variables are missing, it will throw.
+     Constructor:
+     - Loads environment variables from .env (AZURE_SPEECH_KEY, AZURE_REGION)
+     - Sets up SpeechConfig for recognition + synthesis
+     - Chooses a clear UK English voice for TTS (can be changed later)
     */
     public VoiceInterface()
     {
         // Define a relative path to the .env file for portability
         var envPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env");
-
-        // Load the .env file (must contain AZURE_SPEECH_KEY and AZURE_REGION)
         Env.Load(envPath);
 
         // Retrieve the Azure Speech Service credentials from environment
         subscriptionKey = Environment.GetEnvironmentVariable("AZURE_SPEECH_KEY")
                           ?? throw new ArgumentException("Missing AZURE_SPEECH_KEY");
-
-        // Fallback region if not specified in .env
         serviceRegion = Environment.GetEnvironmentVariable("AZURE_REGION") ?? "uksouth";
 
         // Initialise the Azure speech configuration with loaded credentials
         speechConfig = SpeechConfig.FromSubscription(subscriptionKey, serviceRegion);
+        // Optional: recognition language (helps accuracy)
+        speechConfig.SpeechRecognitionLanguage = "en-GB";
+        // Optional: pick a natural-sounding voice
+        speechConfig.SpeechSynthesisVoiceName = "en-GB-RyanNeural";
+
+        // Route TTS to default speakers explicitly (avoids clipping on some setups)
+        var speaker = AudioConfig.FromDefaultSpeakerOutput();
+        synthesizer = new SpeechSynthesizer(speechConfig, speaker);
     }
 
     /*
-    ListenOnceAsync() activates the microphone
-    and waits for a single voice command.
-    It returns the recognised speech as a string,
-    or null if no valid speech is detected.
+     ListenOnceAsync()
+     -----------------
+     Activates the microphone and waits for a single voice command.
+     Returns the recognised speech as a string, or null if not recognised.
     */
     public async Task<string?> ListenOnceAsync()
     {
-        // Set up the recogniser with the current speech config
-        using var recogniser = new SpeechRecognizer(speechConfig);
+        // If TTS is still playing, wait before opening the mic (half-duplex safety)
+        while (IsSpeaking) await Task.Delay(50);
+
+        using var mic = AudioConfig.FromDefaultMicrophoneInput();
+        using var recogniser = new SpeechRecognizer(speechConfig, mic);
 
         Console.WriteLine("Speak now...");
 
-        // Start listening and wait for a singe result
+        // Start listening and wait for a single result
         var result = await recogniser.RecognizeOnceAsync();
 
-        // Handle successful recognition
         if (result.Reason == ResultReason.RecognizedSpeech)
         {
             Console.WriteLine($"Recognised: {result.Text}");
             return result.Text;
         }
-        // Handle unrecognisable speech (e.g. silence or noise)
         else if (result.Reason == ResultReason.NoMatch)
         {
             Console.WriteLine("No speech recognised.");
         }
-        // Handle recognition cancellation (e.g. due to error)
         else if (result.Reason == ResultReason.Canceled)
         {
             var cancellation = CancellationDetails.FromResult(result);
             Console.WriteLine($"Cancelled: {cancellation.Reason}");
-
-            // If the cancellation was caused by an error, print the details
             if (cancellation.Reason == CancellationReason.Error)
             {
                 Console.WriteLine($"Error details: {cancellation.ErrorDetails}");
             }
         }
 
-        // Return null if speech was not recognised
         return null;
+    }
+
+    /*
+     SpeakAsync()
+     ------------
+     Speaks a line of text out loud using Azure TTS.
+     (Printing to console is done by the caller so we don't double-print.)
+    */
+    public async Task SpeakAsync(string text)
+
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        string? tmp = null;
+        try
+        {
+            IsSpeaking = true;
+
+            if (OperatingSystem.IsWindows())
+            {
+                // --- Buffered path on Windows: synth → WAV → PlaySync (prevents clipping) ---
+                tmp = Path.Combine(Path.GetTempPath(), $"aca_tts_{Guid.NewGuid():N}.wav");
+
+                using (var fileOut = AudioConfig.FromWavFileOutput(tmp))
+                using (var synthToFile = new SpeechSynthesizer(speechConfig, fileOut))
+                {
+                    var res = await synthToFile.SpeakTextAsync(text);
+                    if (res.Reason != ResultReason.SynthesizingAudioCompleted)
+                        return; // fail gracefully
+                }
+
+                // SoundPlayer is Windows-only; guard removes CA1416 warnings.
+                #pragma warning disable CA1416
+                using (var player = new System.Media.SoundPlayer(tmp))
+                {
+                    player.Load();      // fully buffer
+                    player.PlaySync();  // block until finished
+                }
+                #pragma warning restore CA1416
+            }
+            else
+            {
+                // --- Non-Windows: use the normal SDK speaker path ---
+                await synthesizer.SpeakTextAsync(text);
+            }
+
+            // Small settle so we don't open the mic immediately after TTS
+            await Task.Delay(200);
+        }
+        finally
+        {
+            IsSpeaking = false;
+            if (tmp != null) { try { File.Delete(tmp); } catch { } }
+        }
     }
 }
